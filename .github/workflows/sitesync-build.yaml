@@ -14,7 +14,7 @@ on:
         type: string
 
 env:
-  DEPLOYMENT_FOLDER: public
+  DEPLOYMENT_FOLDER: sitemanager/.next
 
 jobs:
 # Please do not rename this job
@@ -33,11 +33,17 @@ jobs:
           node-version: v22.x
 
       - name: Build Node assets
+        working-directory: ./sitemanager
         env:
           CI: true
           SITE_URL: ${{ inputs.site-url }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           npm ci
+          npx prisma generate
           npm run build
 
 # Please do not touch the following action
