@@ -45,5 +45,6 @@ public/uploads/**/*
 # Ignore nested repository
 sitemanager/
 
-# Ignore everything outside the project directory
+# Ignore everything in parent directory (outside project)
 ../*
+!../
