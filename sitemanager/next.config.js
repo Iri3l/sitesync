@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone', // Pentru Heroku
   images: {
     domains: ['localhost'],
     remotePatterns: [
