@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "postinstall": "cd sitemanager && npm install",
+    "postinstall": "cd sitemanager && npm install && cd .. && cd sitemanager && npm run postinstall",
     "build": "cd sitemanager && npm run build",
     "start": "cd sitemanager && npm start"
   },
