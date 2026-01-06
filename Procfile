@@ -1,1 +1,1 @@
-web: cd sitemanager && npm start
+web: npm start
