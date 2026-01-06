@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url)
-    const format = searchParams.get("format") || "excel"
+    const exportFormat = searchParams.get("format") || "excel"
 
     const snags = await prisma.snag.findMany({
       include: {
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    if (format === "pdf") {
+    if (exportFormat === "pdf") {
       // PDF export
       const PDFDocument = require("pdfkit")
       const doc = new PDFDocument()

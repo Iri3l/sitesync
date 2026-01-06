@@ -7,6 +7,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
+// Check if OpenAI API key is configured
+if (!process.env.OPENAI_API_KEY) {
+  console.warn("OPENAI_API_KEY is not set. AI features will not work.")
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -21,6 +26,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Only managers can process delivery notes" },
         { status: 403 }
+      )
+    }
+
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "OpenAI API key is not configured. Please contact the administrator." },
+        { status: 500 }
       )
     }
 
@@ -109,10 +122,29 @@ If you cannot find any items, return an empty array [].`,
     return NextResponse.json({ items })
   } catch (error) {
     console.error("Delivery note processing error:", error)
+    
+    // Check for specific OpenAI API errors
+    if (error instanceof Error) {
+      if (error.message.includes("API key") || error.message.includes("authentication")) {
+        return NextResponse.json(
+          { error: "OpenAI API key is invalid or not configured. Please contact the administrator." },
+          { status: 500 }
+        )
+      }
+      if (error.message.includes("rate limit")) {
+        return NextResponse.json(
+          { error: "OpenAI API rate limit exceeded. Please try again later." },
+          { status: 429 }
+        )
+      }
+    }
+    
     return NextResponse.json(
-      { error: "Failed to process delivery note" },
+      { error: "Failed to process delivery note. Please try again." },
       { status: 500 }
     )
   }
 }
+
+
 

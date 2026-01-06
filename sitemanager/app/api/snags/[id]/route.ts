@@ -113,8 +113,11 @@ export async function PATCH(
       // Set resolvedAt if status is resolved
       if (validated.status === "resolved") {
         updateData.resolvedAt = new Date()
-      } else if (existingSnag.status === "resolved" && validated.status !== "resolved") {
-        updateData.resolvedAt = null
+      } else {
+        // If the status is being changed from 'resolved' to something else
+        if (existingSnag.status === "resolved") {
+          updateData.resolvedAt = null
+        }
       }
     }
     if (validated.assignedToId !== undefined)

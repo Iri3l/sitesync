@@ -93,3 +93,5 @@ Supabase actualizează interfața periodic. Dacă nu găsești exact locațiile 
 1. Caută orice secțiune care menționează **"Connection"**, **"Database URL"**, sau **"Connection string"**
 2. Sau folosește **Metoda 3** (construiește-l manual) cu informațiile din Settings → Database
 
+
+

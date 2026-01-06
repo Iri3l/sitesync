@@ -134,3 +134,5 @@ Pentru dezvoltare rapidă:
 1. **Folosește Magic Link** cu Gmail App Password (cel mai simplu)
 2. **Configurează Google OAuth** mai târziu pentru producție
 
+
+

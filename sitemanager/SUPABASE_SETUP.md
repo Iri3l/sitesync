@@ -116,3 +116,5 @@ Când ești gata pentru producție:
 - Rulează migrațiile: `npm run prisma:migrate`
 - Verifică că ai rulat `npm run prisma:generate` înainte
 
+
+

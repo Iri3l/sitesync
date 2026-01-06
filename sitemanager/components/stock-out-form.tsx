@@ -124,3 +124,5 @@ export function StockOutForm({ stockItem }: { stockItem: StockItem }) {
   )
 }
 
+
+

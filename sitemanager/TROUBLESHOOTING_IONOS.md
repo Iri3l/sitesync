@@ -115,3 +115,5 @@ Dacă merge, vei vedea:
 ✔ Applied migration `20240106_xxxxx_init` to database
 ```
 
+
+

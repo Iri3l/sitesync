@@ -93,3 +93,5 @@ openssl rand -base64 32
 
 Copiază output-ul și înlocuiește `NEXTAUTH_SECRET` în `.env`.
 
+
+

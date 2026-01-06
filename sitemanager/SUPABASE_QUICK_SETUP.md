@@ -104,3 +104,5 @@ NEXTAUTH_SECRET="+PT8UH68+M3U9jYDSBYP2tv4yUAQdiA/B47UbY9Fowc="
 - Rulează migrațiile: `npm run prisma:migrate`
 - Verifică că ai rulat `npm run prisma:generate` înainte
 
+
+

@@ -55,5 +55,5 @@ export default async function SnagPage({
     return <SnagViewForm snag={snag} />
   }
 
-  return <SnagEditForm snag={snag} isManager={isManager} isSupervisor={isSupervisor} />
+  return <SnagEditForm snag={snag} isManager={isManager} />
 }

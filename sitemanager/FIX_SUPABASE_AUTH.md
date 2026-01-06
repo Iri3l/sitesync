@@ -93,3 +93,5 @@ DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.ymgltxgmlgwgizqfapvd.supa
 
 **Notă:** Înlocuiește `[YOUR-PASSWORD]` cu parola reală (fără paranteze pătrate).
 
+
+
