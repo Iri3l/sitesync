@@ -2,3 +2,6 @@
 *
 !sitemanager/
 !.gitignore
+
+# But don't ignore sitemanager subdirectories
+!sitemanager/**
