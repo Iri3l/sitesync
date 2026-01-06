@@ -1,6 +1,24 @@
 {
-  "name": "sitemanager",
-  "version": "0.1.0",
+  "name": "sitesync",
+  "version": "1.0.0",
+  "description": "Construction Site Management Application - Site Diary, Snags, and Stock management for UK construction sites",
+  "author": "Irinel Lazarovici",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Iri3l/sitemanager.git"
+  },
+  "keywords": [
+    "construction",
+    "site-management",
+    "nextjs",
+    "typescript",
+    "prisma",
+    "construction-sites",
+    "site-diary",
+    "snags",
+    "stock-management"
+  ],
   "private": true,
   "scripts": {
     "dev": "next dev",

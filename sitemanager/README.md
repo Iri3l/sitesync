@@ -1,6 +1,14 @@
 # SiteSync
 
-A construction site management application for UK construction sites (and beyond) with features for Site Diary, Snags, and Stock management.
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Next.js](https://img.shields.io/badge/Next.js-14-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)
+![Prisma](https://img.shields.io/badge/Prisma-5.19-2D3748)
+
+A professional construction site management application for UK construction sites (and beyond) with features for Site Diary, Snags, and Stock management.
+
+[![CI/CD Pipeline](https://github.com/Iri3l/sitemanager/actions/workflows/ci.yml/badge.svg)](https://github.com/Iri3l/sitemanager/actions/workflows/ci.yml)
 
 ## Features
 
@@ -143,11 +151,21 @@ The application uses Prisma with the following main models:
 - Multi-site dashboard overview
 - User roles and permissions
 
+## Version
+
+Current version: **1.0.0**
+
+See [CHANGELOG.md](./CHANGELOG.md) for version history and updates.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
 ## License
 
-[Add your license here]
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ## Support
 
-[Add support information here]
+For support, please open an issue in the [GitHub repository](https://github.com/Iri3l/sitemanager/issues).
 
