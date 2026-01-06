@@ -1,7 +1,11 @@
-# Ignore everything except sitemanager/
+# Ignore everything except sitemanager/ and .github/
 *
 !sitemanager/
 !.gitignore
+!.github/
 
 # But don't ignore sitemanager subdirectories
 !sitemanager/**
+
+# Allow .github workflows
+!.github/workflows/
