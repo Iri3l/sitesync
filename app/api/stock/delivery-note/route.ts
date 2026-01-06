@@ -3,13 +3,14 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import OpenAI from "openai"
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
-// Check if OpenAI API key is configured
-if (!process.env.OPENAI_API_KEY) {
-  console.warn("OPENAI_API_KEY is not set. AI features will not work.")
+// Initialize OpenAI client only when needed (not at module level)
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not configured")
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
     const dataUrl = `data:${file.type};base64,${base64Image}`
 
     // Call OpenAI Vision API
+    const openai = getOpenAIClient()
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini", // or "gpt-4o" for better accuracy
       messages: [
