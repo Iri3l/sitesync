@@ -48,11 +48,12 @@ export default async function SnagPage({
 
   const userRole = session.user.role || "user"
   const isManager = userRole === "manager"
+  const isSupervisor = userRole === "supervisor"
 
   // Regular users can only view, not edit
   if (userRole === "user") {
     return <SnagViewForm snag={snag} />
   }
 
-  return <SnagEditForm snag={snag} isManager={isManager} />
+  return <SnagEditForm snag={snag} isManager={isManager} isSupervisor={isSupervisor} />
 }

@@ -23,6 +23,7 @@ export default function SignInPage() {
     const email = formData.get("email") as string
     const password = formData.get("password") as string
     const name = formData.get("name") as string
+    const role = formData.get("role") as string
 
     try {
       if (isSignUp) {
@@ -30,7 +31,7 @@ export default function SignInPage() {
         const response = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, name }),
+          body: JSON.stringify({ email, password, name, role: role || "user" }),
         })
 
         if (!response.ok) {
