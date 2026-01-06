@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
 import Link from "next/link"
+import Image from "next/image"
 
 interface SnagPhoto {
   id: string
@@ -140,10 +141,11 @@ export function SnagViewForm({ snag }: { snag: Snag }) {
                 {snag.photos.map((photo) => (
                   <div key={photo.id} className="relative">
                     <div className="relative aspect-square rounded-lg overflow-hidden border">
-                      <img
+                      <Image
                         src={photo.url}
                         alt={photo.caption || "Snag photo"}
-                        className="object-cover w-full h-full"
+                        fill
+                        className="object-cover"
                       />
                     </div>
                     {photo.caption && (

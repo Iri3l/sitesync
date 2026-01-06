@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { format } from "date-fns"
+import Image from "next/image"
 
 export default async function SiteDiaryEntryPage({
   params,
@@ -106,10 +107,11 @@ export default async function SiteDiaryEntryPage({
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {entry.photos.map((photo) => (
                   <div key={photo.id} className="relative aspect-square">
-                    <img
+                    <Image
                       src={photo.url}
                       alt={photo.caption || "Diary photo"}
-                      className="rounded-lg object-cover w-full h-full"
+                      fill
+                      className="rounded-lg object-cover"
                     />
                   </div>
                 ))}

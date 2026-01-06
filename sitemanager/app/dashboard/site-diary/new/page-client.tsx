@@ -62,7 +62,7 @@ export default function NewSiteDiaryPageClient() {
         <CardHeader>
           <CardTitle>Entry Details</CardTitle>
           <CardDescription>
-            Fill in the details for today's site diary entry
+            Fill in the details for today&apos;s site diary entry
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -120,7 +120,7 @@ export default function NewSiteDiaryPageClient() {
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
-                placeholder="Enter notes about today's activities..."
+                placeholder="Enter notes about today&apos;s activities..."
                 rows={6}
               />
             </div>
