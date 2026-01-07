@@ -1,179 +1,96 @@
 "use client"
 
-import { useState } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 export default function SignInPage() {
-  const router = useRouter()
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-    const name = formData.get("name") as string
-    const role = formData.get("role") as string
-
-    try {
-      if (isSignUp) {
-        // Sign up
-        const response = await fetch("/api/auth/signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, name, role: role || "user" }),
-        })
-
-        if (!response.ok) {
-          const data = await response.json()
-          throw new Error(data.error || "Failed to create account")
-        }
-
-        // After signup, automatically sign in
-        const result = await signIn("credentials", {
-          email,
-          password,
-          callbackUrl: "/dashboard",
-          redirect: false,
-        })
-
-        if (result?.error) {
-          setError("Account created but failed to sign in. Please try signing in.")
-        } else {
-          router.push("/dashboard")
-        }
-      } else {
-        // Sign in
-        const result = await signIn("credentials", {
-          email,
-          password,
-          callbackUrl: "/dashboard",
-          redirect: false,
-        })
-
-        if (result?.error) {
-          setError("Invalid email or password")
-        } else {
-          router.push("/dashboard")
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || "An error occurred")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>{isSignUp ? "Create Account" : "Sign In"}</CardTitle>
-          <CardDescription>
-            {isSignUp
-              ? "Create a new SiteSync account"
-              : "Sign in to your SiteSync account"}
+    <div className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardHeader className="space-y-4">
+          <div className="flex justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-xl opacity-50"></div>
+              <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 rounded-2xl shadow-2xl">
+                <div className="text-4xl font-bold">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">Site</span>
+                  <span className="text-white">Sync</span>
+                </div>
+                <div className="text-xs text-blue-100 text-center mt-1">Construction Manager</div>
+              </div>
+            </div>
+          </div>
+          <CardTitle className="text-center">Welcome Back</CardTitle>
+          <CardDescription className="text-center">
+            Sign in to manage your construction sites
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <>
-                <div>
-                  <Label htmlFor="name">Name (optional)</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Your name"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="role">Role</Label>
-                  <select
-                    id="role"
-                    name="role"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-                    defaultValue="user"
-                  >
-                    <option value="user">User</option>
-                    <option value="supervisor">Supervisor</option>
-                    <option value="manager">Manager</option>
-                  </select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Managers can create and edit snags. Supervisors can only add photos and change status.
-                  </p>
-                </div>
-              </>
-            )}
-
+          <Button
+            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            className="w-full"
+            variant="outline"
+          >
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
+            </svg>
+            Continue with Google
+          </Button>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              const formData = new FormData(e.currentTarget)
+              const email = formData.get("email") as string
+              await signIn("email", { email, callbackUrl: "/dashboard" })
+            }}
+            className="space-y-4"
+          >
             <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
+              <label htmlFor="email" className="text-sm font-medium">
+                Email
+              </label>
+              <input
                 id="email"
                 name="email"
                 type="email"
                 required
+                className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="your@email.com"
-                className="mt-1"
               />
             </div>
-
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                minLength={6}
-                placeholder={isSignUp ? "At least 6 characters" : "Your password"}
-                className="mt-1"
-              />
-            </div>
-
-            {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-                {error}
-              </div>
-            )}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading
-                ? "Please wait..."
-                : isSignUp
-                ? "Create Account"
-                : "Sign In"}
+            <Button type="submit" className="w-full">
+              Send Magic Link
             </Button>
           </form>
-
-          <div className="text-center text-sm">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp)
-                setError("")
-              }}
-              className="text-primary hover:underline"
-            >
-              {isSignUp
-                ? "Already have an account? Sign in"
-                : "Don't have an account? Sign up"}
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>
   )
 }
+

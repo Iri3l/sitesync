@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SiteSync - Construction Site Management",
-  description: "Manage construction sites with Site Diary, Snags, and Stock management",
+  description: "Modern construction management platform for Site Diary, Snags, Stock, and more",
 };
 
 export default function RootLayout({
