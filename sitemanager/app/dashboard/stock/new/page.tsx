@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,23 +10,15 @@ import { SiteSelector } from "@/components/site-selector"
 
 export default function NewStockItemPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
-  const siteIdFromQuery = searchParams.get("siteId") || ""
   const [formData, setFormData] = useState({
-    siteId: siteIdFromQuery,
+    siteId: "",
     name: "",
     category: "",
     unit: "pcs",
     quantity: "0",
     minQuantity: "",
   })
-
-  useEffect(() => {
-    if (siteIdFromQuery) {
-      setFormData((prev) => ({ ...prev, siteId: siteIdFromQuery }))
-    }
-  }, [siteIdFromQuery])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,14 +40,20 @@ export default function NewStockItemPage() {
       })
 
       if (response.ok) {
-        // Redirect back to site details if siteId was provided, otherwise to stock list
-        if (siteIdFromQuery) {
-          router.push(`/dashboard/sites/${siteIdFromQuery}`)
-        } else {
-          router.push("/dashboard/stock")
+        const data = await response.json()
+        
+        // Check if items were merged
+        if (data.merged) {
+          alert(
+            `Stock item "${data.name}" already exists. ` +
+            `Quantities merged: ${data.originalQuantity} + ${data.addedQuantity} = ${data.quantity} ${data.unit}`
+          )
         }
+        
+        router.push("/dashboard/stock")
       } else {
-        alert("Failed to create stock item")
+        const errorData = await response.json().catch(() => ({}))
+        alert(errorData.error || "Failed to create stock item")
       }
     } catch (error) {
       console.error(error)
@@ -83,21 +81,11 @@ export default function NewStockItemPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {siteIdFromQuery ? (
-              <div>
-                <Label>Site</Label>
-                <Input value={siteIdFromQuery} disabled className="bg-muted" />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Site is pre-selected from the site details page
-                </p>
-              </div>
-            ) : (
-              <SiteSelector
-                value={formData.siteId}
-                onChange={(siteId) => setFormData({ ...formData, siteId })}
-                required
-              />
-            )}
+            <SiteSelector
+              value={formData.siteId}
+              onChange={(siteId) => setFormData({ ...formData, siteId })}
+              required
+            />
 
             <div>
               <Label htmlFor="name">Item Name</Label>

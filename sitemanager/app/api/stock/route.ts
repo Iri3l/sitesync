@@ -21,22 +21,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Only managers can create stock items
-    const userRole = session.user.role || "user"
-    if (userRole !== "manager") {
-      return NextResponse.json(
-        { error: "Only managers can create stock items" },
-        { status: 403 }
-      )
-    }
-
     const body = await req.json()
     const validated = createStockItemSchema.parse(body)
 
+    // Check if an item with the same name and site already exists (case-insensitive)
+    const existingItem = await prisma.stockItem.findFirst({
+      where: {
+        siteId: validated.siteId,
+        name: {
+          equals: validated.name.trim(),
+          mode: "insensitive", // Case-insensitive comparison
+        },
+      },
+    })
+
+    if (existingItem) {
+      // Merge: add quantities together
+      const mergedQuantity = existingItem.quantity + validated.quantity
+      
+      // For minQuantity, keep the existing one if it exists, otherwise use the new one
+      const mergedMinQuantity = existingItem.minQuantity !== null 
+        ? existingItem.minQuantity 
+        : validated.minQuantity || null
+
+      // Update existing item (keep existing unit and category if they exist)
+      const updatedItem = await prisma.stockItem.update({
+        where: {
+          id: existingItem.id,
+        },
+        data: {
+          quantity: mergedQuantity,
+          minQuantity: mergedMinQuantity,
+          // Update category if the new one is provided and existing one is empty
+          category: existingItem.category || validated.category || null,
+          // Keep the existing unit
+        },
+      })
+
+      return NextResponse.json(
+        { 
+          ...updatedItem, 
+          merged: true,
+          originalQuantity: existingItem.quantity,
+          addedQuantity: validated.quantity,
+        },
+        { status: 200 }
+      )
+    }
+
+    // No existing item found, create new one
     const stockItem = await prisma.stockItem.create({
       data: {
         siteId: validated.siteId,
-        name: validated.name,
+        name: validated.name.trim(),
         category: validated.category || null,
         unit: validated.unit,
         quantity: validated.quantity,
