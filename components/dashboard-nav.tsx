@@ -14,6 +14,7 @@ const navItems = [
   { href: "/dashboard/sites", label: "Sites", icon: BuildingIcon, roles: ["all"] },
   { href: "/dashboard/site-diary", label: "Site Diary", icon: CalendarIcon, roles: ["director", "manager"] },
   { href: "/dashboard/snags", label: "Snags", icon: WarningIcon, roles: ["all"] },
+  { href: "/dashboard/delays", label: "Delays", icon: ClockIcon, roles: ["director", "manager", "supervisor"] },
   { href: "/dashboard/stock", label: "Stock", icon: BoxIcon, roles: ["all"] },
   { href: "/dashboard/users", label: "Users", icon: UsersIcon, roles: ["director"] },
   { href: "/dashboard/profile", label: "Profile", icon: UserIcon, roles: ["all"] },
@@ -39,6 +40,14 @@ function WarningIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+  )
+}
+
+function ClockIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   )
 }
@@ -82,6 +91,7 @@ export function DashboardNav({ userRole, userEmail }: DashboardNavProps) {
     if (roles.includes("all")) return true
     if (roles.includes("director") && isDirector) return true
     if (roles.includes("manager") && (isManager || isDirector)) return true
+    if (roles.includes("supervisor") && (isSupervisor || isManager || isDirector)) return true
     return false
   }
 
