@@ -79,6 +79,50 @@ export async function showDelayNotification(data: DelayNotificationData) {
   return true
 }
 
+// Stock alert notification
+interface StockAlertData {
+  itemName: string
+  siteName: string
+  currentQuantity: number
+  minQuantity: number
+  unit: string
+  isOutOfStock: boolean
+  stockItemId: string
+}
+
+export async function showStockAlertNotification(data: StockAlertData) {
+  const hasPermission = await requestNotificationPermission()
+  
+  if (!hasPermission) {
+    console.log("Notification permission not granted")
+    return false
+  }
+
+  const alertType = data.isOutOfStock ? "Out of Stock" : "Low Stock"
+  const alertEmoji = data.isOutOfStock ? "🚨" : "⚠️"
+
+  const notification = new Notification(`${alertEmoji} ${alertType}: ${data.itemName}`, {
+    body: `Site: ${data.siteName}\nQuantity: ${data.currentQuantity} ${data.unit}\nMinimum: ${data.minQuantity} ${data.unit}`,
+    icon: "/icon-192.svg",
+    badge: "/icon-192.svg",
+    tag: `stock-alert-${data.stockItemId}`,
+    requireInteraction: true,
+    vibrate: [300, 100, 300, 100, 300], // Urgent vibration pattern
+    data: {
+      url: `/dashboard/stock/${data.stockItemId}`,
+    },
+  })
+
+  notification.onclick = function(event) {
+    event.preventDefault()
+    window.focus()
+    window.location.href = `/dashboard/stock/${data.stockItemId}`
+    notification.close()
+  }
+
+  return true
+}
+
 // For service worker - background notifications
 export function registerServiceWorker() {
   if ("serviceWorker" in navigator) {

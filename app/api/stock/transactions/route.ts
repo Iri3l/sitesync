@@ -155,9 +155,37 @@ export async function POST(req: NextRequest) {
       return transaction
     })
 
-    // Check stock levels and send notifications if needed (only for "out" transactions)
+    // Check stock levels for notifications (only for "out" transactions)
+    let stockAlert = null
     if (validated.type === "out") {
-      // Run async without blocking the response
+      const minQuantity = stockItem.minQuantity || 0
+      const isOutOfStock = newQuantity === 0
+      const isBelowThreshold = newQuantity > 0 && newQuantity <= minQuantity
+      const wasAboveThreshold = stockItem.quantity > minQuantity
+      const wasInStock = stockItem.quantity > 0
+      
+      const shouldNotifyOutOfStock = isOutOfStock && wasInStock
+      const shouldNotifyLowStock = isBelowThreshold && wasAboveThreshold && !isOutOfStock
+
+      if (shouldNotifyOutOfStock || shouldNotifyLowStock) {
+        // Get site name for notification
+        const itemWithSite = await prisma.stockItem.findUnique({
+          where: { id: validated.stockItemId },
+          include: { site: { select: { name: true } } },
+        })
+        
+        stockAlert = {
+          itemName: stockItem.name,
+          siteName: itemWithSite?.site.name || "Unknown Site",
+          currentQuantity: newQuantity,
+          minQuantity: minQuantity,
+          unit: stockItem.unit,
+          isOutOfStock: shouldNotifyOutOfStock,
+          stockItemId: stockItem.id,
+        }
+      }
+
+      // Send email notifications async
       checkAndNotifyStockLevels(
         validated.stockItemId,
         newQuantity,
@@ -165,7 +193,11 @@ export async function POST(req: NextRequest) {
       ).catch(console.error)
     }
 
-    return NextResponse.json(result, { status: 201 })
+    return NextResponse.json({ 
+      ...result, 
+      stockAlert,
+      newQuantity,
+    }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
