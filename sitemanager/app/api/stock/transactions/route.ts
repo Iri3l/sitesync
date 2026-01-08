@@ -19,15 +19,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Block regular users from creating transactions
-    const userRole = session.user.role || "user"
-    if (userRole === "user") {
-      return NextResponse.json(
-        { error: "You don't have permission to create stock transactions" },
-        { status: 403 }
-      )
-    }
-
     const body = await req.json()
     const validated = createTransactionSchema.parse(body)
 

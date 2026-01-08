@@ -54,24 +54,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userRole = session.user.role || "user"
-    const isManager = userRole === "manager"
-
-    // For managers: show only their sites
-    // For users/supervisors: show all sites (created by managers)
     const sites = await prisma.site.findMany({
-      where: isManager
-        ? {
-            managerId: session.user.id,
-          }
-        : {}, // Show all sites for non-managers
-      include: {
-        manager: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
+      where: {
+        managerId: session.user.id,
       },
       orderBy: {
         createdAt: "desc",

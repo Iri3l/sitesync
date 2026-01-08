@@ -9,7 +9,22 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { SiteSelector } from "@/components/site-selector"
 
-export default function NewSiteDiaryPageClient() {
+export default async function NewSiteDiaryPage() {
+  const { getServerSession } = await import("next-auth")
+  const { authOptions } = await import("@/lib/auth")
+  const { redirect } = await import("next/navigation")
+
+  const session = await getServerSession(authOptions)
+
+  if (!session) {
+    redirect("/auth/signin")
+  }
+
+  // Block access for regular users
+  const userRole = session.user.role || "user"
+  if (userRole === "user") {
+    redirect("/dashboard")
+  }
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -62,7 +77,7 @@ export default function NewSiteDiaryPageClient() {
         <CardHeader>
           <CardTitle>Entry Details</CardTitle>
           <CardDescription>
-            Fill in the details for today&apos;s site diary entry
+            Fill in the details for today's site diary entry
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -120,7 +135,7 @@ export default function NewSiteDiaryPageClient() {
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
-                placeholder="Enter notes about today&apos;s activities..."
+                placeholder="Enter notes about today's activities..."
                 rows={6}
               />
             </div>

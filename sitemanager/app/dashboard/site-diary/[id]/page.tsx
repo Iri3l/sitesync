@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { format } from "date-fns"
-import Image from "next/image"
 
 export default async function SiteDiaryEntryPage({
   params,
@@ -16,13 +15,7 @@ export default async function SiteDiaryEntryPage({
   const session = await getServerSession(authOptions)
 
   if (!session) {
-    redirect("/signin")
-  }
-
-  // Block access for regular users and supervisors
-  const userRole = session.user.role || "user"
-  if (userRole !== "manager") {
-    redirect("/dashboard")
+    redirect("/auth/signin")
   }
 
   const entry = await prisma.siteDiary.findUnique({
@@ -107,11 +100,10 @@ export default async function SiteDiaryEntryPage({
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {entry.photos.map((photo) => (
                   <div key={photo.id} className="relative aspect-square">
-                    <Image
+                    <img
                       src={photo.url}
                       alt={photo.caption || "Diary photo"}
-                      fill
-                      className="rounded-lg object-cover"
+                      className="rounded-lg object-cover w-full h-full"
                     />
                   </div>
                 ))}

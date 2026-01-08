@@ -11,13 +11,7 @@ export default async function SiteDiaryPage() {
   const session = await getServerSession(authOptions)
 
   if (!session) {
-    redirect("/signin")
-  }
-
-  // Block access for regular users and supervisors
-  const userRole = session.user.role || "user"
-  if (userRole !== "manager") {
-    redirect("/dashboard")
+    redirect("/auth/signin")
   }
 
   // Get user's sites

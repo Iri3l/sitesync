@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,23 +11,15 @@ import { SiteSelector } from "@/components/site-selector"
 
 export default function NewSnagPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
-  const siteIdFromQuery = searchParams.get("siteId") || ""
   const [formData, setFormData] = useState({
-    siteId: siteIdFromQuery,
+    siteId: "",
     title: "",
     description: "",
     location: "",
     priority: "medium",
     status: "open",
   })
-
-  useEffect(() => {
-    if (siteIdFromQuery) {
-      setFormData((prev) => ({ ...prev, siteId: siteIdFromQuery }))
-    }
-  }, [siteIdFromQuery])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,12 +35,7 @@ export default function NewSnagPage() {
       })
 
       if (response.ok) {
-        // Redirect back to site details if siteId was provided, otherwise to snags list
-        if (siteIdFromQuery) {
-          router.push(`/dashboard/sites/${siteIdFromQuery}`)
-        } else {
-          router.push("/dashboard/snags")
-        }
+        router.push("/dashboard/snags")
       } else {
         alert("Failed to create snag")
       }
@@ -78,21 +65,11 @@ export default function NewSnagPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {siteIdFromQuery ? (
-              <div>
-                <Label>Site</Label>
-                <Input value={siteIdFromQuery} disabled className="bg-muted" />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Site is pre-selected from the site details page
-                </p>
-              </div>
-            ) : (
-              <SiteSelector
-                value={formData.siteId}
-                onChange={(siteId) => setFormData({ ...formData, siteId })}
-                required
-              />
-            )}
+            <SiteSelector
+              value={formData.siteId}
+              onChange={(siteId) => setFormData({ ...formData, siteId })}
+              required
+            />
 
             <div>
               <Label htmlFor="title">Title</Label>

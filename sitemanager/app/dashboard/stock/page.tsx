@@ -5,49 +5,20 @@ import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ExportButtons } from "@/components/export-buttons"
 
-export default async function StockPage({
-  searchParams,
-}: {
-  searchParams: { siteId?: string }
-}) {
+export default async function StockPage() {
   const session = await getServerSession(authOptions)
 
   if (!session) {
-    redirect("/signin")
+    redirect("/auth/signin")
   }
-
-  const userRole = session.user.role || "user"
-  const isManager = userRole === "manager"
-  const siteId = searchParams?.siteId
-
-  // Build where clause based on role and siteId
-  const whereClause: any = {}
-  
-  if (siteId) {
-    // Filter by specific site if siteId is provided
-    whereClause.siteId = siteId
-  } else if (isManager) {
-    // Managers see all their sites' stock
-    whereClause.site = {
-      managerId: session.user.id,
-    }
-  } else {
-    // Users/supervisors without siteId should see nothing (redirect to sites)
-    redirect("/dashboard/sites")
-  }
-
-  // Fetch site info if siteId is provided
-  const site = siteId
-    ? await prisma.site.findUnique({
-        where: { id: siteId },
-        select: { name: true, address: true },
-      })
-    : null
 
   const stockItems = await prisma.stockItem.findMany({
-    where: whereClause,
+    where: {
+      site: {
+        managerId: session.user.id,
+      },
+    },
     include: {
       site: true,
       transactions: {
@@ -73,31 +44,14 @@ export default async function StockPage({
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">
-            {site ? site.name : "Stock Management"}
-          </h1>
+          <h1 className="text-3xl font-bold">Stock Management</h1>
           <p className="text-muted-foreground">
-            {site ? site.address || "Site inventory" : "Manage site inventory"}
+            Manage site inventory
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          {siteId && (
-            <Link href="/dashboard/sites">
-              <Button variant="outline">Back to Sites</Button>
-            </Link>
-          )}
-          {session.user.role === "manager" && (
-            <>
-              <ExportButtons type="stock" />
-              <Link href="/dashboard/stock/delivery-note">
-                <Button variant="outline">Upload Delivery Note</Button>
-              </Link>
-              <Link href={`/dashboard/stock/new${siteId ? `?siteId=${siteId}` : ""}`}>
-                <Button>New Stock Item</Button>
-              </Link>
-            </>
-          )}
-        </div>
+        <Link href="/dashboard/stock/new">
+          <Button>New Stock Item</Button>
+        </Link>
       </div>
 
       {stockItems.length === 0 ? (
@@ -155,7 +109,7 @@ export default async function StockPage({
                       </div>
                     )}
                     <div className="pt-4">
-                      <Link href={`/dashboard/stock/${item.id}${siteId ? `?siteId=${siteId}` : ""}`}>
+                      <Link href={`/dashboard/stock/${item.id}`}>
                         <Button variant="outline" size="sm" className="w-full">
                           View Details
                         </Button>

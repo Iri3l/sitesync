@@ -38,13 +38,3 @@ next-env.d.ts
 # prisma
 /prisma/migrations
 
-# uploads (keep folder structure but ignore files)
-public/uploads/**/*
-!public/uploads/**/.gitkeep
-
-# Ignore nested repository
-sitemanager/
-
-# Ignore everything in parent directory (outside project)
-../*
-!../

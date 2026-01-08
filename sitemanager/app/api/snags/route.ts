@@ -10,7 +10,7 @@ const createSnagSchema = z.object({
   description: z.string().optional(),
   location: z.string().optional(),
   priority: z.enum(["low", "medium", "high", "critical"]),
-  status: z.enum(["open", "in_progress", "resolved", "accepted"]),
+  status: z.enum(["open", "in_progress", "resolved"]),
 })
 
 export async function POST(req: NextRequest) {

@@ -12,32 +12,19 @@ export default async function SitesPage() {
   const session = await getServerSession(authOptions)
 
   if (!session) {
-    redirect("/signin")
+    redirect("/auth/signin")
   }
 
-  const userRole = session.user.role || "user"
-  const isManager = userRole === "manager"
-
-  // For managers: show only their sites
-  // For users/supervisors: show all sites (created by managers)
   const sites = await prisma.site.findMany({
-    where: isManager
-      ? {
-          managerId: session.user.id,
-        }
-      : {}, // Show all sites for non-managers
+    where: {
+      managerId: session.user.id,
+    },
     include: {
       _count: {
         select: {
           siteDiaries: true,
           snags: true,
           stockItems: true,
-        },
-      },
-      manager: {
-        select: {
-          name: true,
-          email: true,
         },
       },
     },
@@ -52,24 +39,20 @@ export default async function SitesPage() {
         <div>
           <h1 className="text-3xl font-bold">Sites</h1>
           <p className="text-muted-foreground">
-            {isManager
-              ? "Manage your construction sites"
-              : "View available construction sites"}
+            Manage your construction sites
           </p>
         </div>
       </div>
 
-      {isManager && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Site</CardTitle>
-            <CardDescription>Add a new construction site to manage</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <NewSiteForm />
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Create New Site</CardTitle>
+          <CardDescription>Add a new construction site to manage</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <NewSiteForm />
+        </CardContent>
+      </Card>
 
       {sites.length === 0 ? (
         <Card>
@@ -82,7 +65,7 @@ export default async function SitesPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {sites.map((site) => (
-            <Card key={site.id} className={isManager ? "cursor-pointer hover:shadow-lg transition-shadow" : ""}>
+            <Card key={site.id}>
               <CardHeader>
                 <CardTitle>{site.name}</CardTitle>
                 <CardDescription>
@@ -90,51 +73,26 @@ export default async function SitesPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {!isManager && site.manager && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Manager:</span>
-                    <span>{site.manager.name || site.manager.email}</span>
-                  </div>
-                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Status:</span>
                   <span className="capitalize">{site.status}</span>
                 </div>
-                {isManager && (
-                  <>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Diary Entries:</span>
-                      <span>{site._count.siteDiaries}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Snags:</span>
-                      <span>{site._count.snags}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Stock Items:</span>
-                      <span>{site._count.stockItems}</span>
-                    </div>
-                  </>
-                )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Diary Entries:</span>
+                  <span>{site._count.siteDiaries}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Snags:</span>
+                  <span>{site._count.snags}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Stock Items:</span>
+                  <span>{site._count.stockItems}</span>
+                </div>
                 <div className="pt-2">
                   <p className="text-xs text-muted-foreground">
                     Created {format(new Date(site.createdAt), "PPP")}
                   </p>
-                </div>
-                <div className="pt-2">
-                  {isManager ? (
-                    <Link href={`/dashboard/sites/${site.id}`}>
-                      <Button variant="outline" className="w-full">
-                        View Details
-                      </Button>
-                    </Link>
-                  ) : (
-                    <Link href={`/dashboard/stock?siteId=${site.id}`}>
-                      <Button variant="outline" className="w-full">
-                        View Details
-                      </Button>
-                    </Link>
-                  )}
                 </div>
               </CardContent>
             </Card>

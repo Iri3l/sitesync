@@ -14,7 +14,6 @@ model User {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
-  password      String?
   emailVerified DateTime?
   image         String?
   role          String    @default("user")
@@ -114,7 +113,7 @@ model Snag {
   title       String
   description String?     @db.Text
   location    String?
-  status      String      @default("open") // open, in_progress, resolved, accepted
+  status      String      @default("open") // open, in_progress, resolved
   priority    String      @default("medium") // low, medium, high, critical
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
