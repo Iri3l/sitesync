@@ -30,7 +30,7 @@ export async function sendPasswordResetEmail({
 
   try {
     const { data, error } = await client.emails.send({
-      from: "SiteSync <noreply@manager.lazarovici.co.uk>"
+      from: "SiteSync <noreply@manager.lazarovici.co.uk>",
       to: email,
       subject: "Reset Your SiteSync Password",
       html: `
