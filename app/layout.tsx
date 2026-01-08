@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { InstallPWABanner } from "@/components/install-pwa-banner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -10,10 +9,11 @@ export const metadata: Metadata = {
   description: "Manage construction sites with Site Diary, Snags, and Stock management",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-32.svg", sizes: "32x32", type: "image/svg+xml" },
+      { url: "/icon-16.svg", sizes: "16x16", type: "image/svg+xml" },
     ],
     apple: [
-      { url: "/apple-icon.svg", sizes: "180x180", type: "image/svg+xml" },
+      { url: "/apple-touch-icon.svg", sizes: "180x180", type: "image/svg+xml" },
     ],
   },
   manifest: "/manifest.json",
@@ -45,11 +45,12 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-icon" href="/apple-icon.svg" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.svg" />
+        <link rel="icon" type="image/svg+xml" sizes="32x32" href="/icon-32.svg" />
+        <link rel="icon" type="image/svg+xml" sizes="16x16" href="/icon-16.svg" />
       </head>
       <body className={inter.className}>
         {children}
-        <InstallPWABanner />
       </body>
     </html>
   );
