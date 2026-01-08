@@ -252,6 +252,12 @@ export default async function SnagsPage({
           {snags.map((snag, index) => {
             const status = getStatusConfig(snag.status)
             const priority = getPriorityConfig(snag.priority)
+            const isAccepted = snag.status === "accepted"
+            
+            // Card background - green for accepted snags (only visible to managers)
+            const cardBgClass = isAccepted && isManager
+              ? "bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200"
+              : "bg-white border-slate-200"
             
             return (
               <Link 
@@ -260,12 +266,20 @@ export default async function SnagsPage({
                 className={`block slide-up opacity-0 stagger-${(index % 5) + 1}`}
                 style={{ animationFillMode: 'forwards' }}
               >
-                <div className="group bg-white rounded-2xl border border-slate-200 p-5 card-hover">
+                <div className={`group rounded-2xl border p-5 card-hover ${cardBgClass} ${isAccepted && isManager ? 'ring-2 ring-emerald-500/20' : ''}`}>
                   <div className="flex items-start gap-4">
-                    {/* Priority Indicator */}
-                    <div className={`w-12 h-12 rounded-xl ${priority.bg} ${priority.ring} ring-4 flex items-center justify-center flex-shrink-0`}>
-                      <span className="text-lg">{priority.icon}</span>
-                    </div>
+                    {/* Priority Indicator - or Accepted checkmark */}
+                    {isAccepted && isManager ? (
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/30">
+                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className={`w-12 h-12 rounded-xl ${priority.bg} ${priority.ring} ring-4 flex items-center justify-center flex-shrink-0`}>
+                        <span className="text-lg">{priority.icon}</span>
+                      </div>
+                    )}
 
                     {/* Main Content */}
                     <div className="flex-1 min-w-0">
