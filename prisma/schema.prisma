@@ -176,4 +176,3 @@ model PasswordResetToken {
 
   @@unique([email, token])
 }
-

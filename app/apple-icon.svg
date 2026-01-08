@@ -1,0 +1,37 @@
+<svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="appleLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f97316" />
+      <stop offset="50%" stop-color="#ea580c" />
+      <stop offset="100%" stop-color="#c2410c" />
+    </linearGradient>
+    <linearGradient id="appleBuildingGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="180" height="180" rx="40" fill="url(#appleLogoGradient)" />
+  
+  <!-- Building silhouette - scaled up for 180x180 -->
+  <path
+    d="M54 126V72L90 45L126 72V126H54Z"
+    fill="url(#appleBuildingGradient)"
+    stroke="white"
+    stroke-width="4"
+  />
+  
+  <!-- Windows -->
+  <rect x="67.5" y="81" width="13.5" height="13.5" fill="#f97316" rx="2" />
+  <rect x="99" y="81" width="13.5" height="13.5" fill="#f97316" rx="2" />
+  <rect x="81" y="103.5" width="18" height="22.5" fill="#f97316" rx="2" />
+  
+  <!-- Sync arrow top right -->
+  <path d="M144 63C144 63 135 54 121.5 54" stroke="white" stroke-width="6" stroke-linecap="round" fill="none" />
+  <path d="M144 63L135 49.5M144 63L130.5 67.5" stroke="white" stroke-width="5" stroke-linecap="round" fill="none" />
+  
+  <!-- Sync arrow bottom left -->
+  <path d="M36 117C36 117 45 126 58.5 126" stroke="white" stroke-width="6" stroke-linecap="round" fill="none" />
+  <path d="M36 117L45 130.5M36 117L49.5 112.5" stroke="white" stroke-width="5" stroke-linecap="round" fill="none" />
+</svg>
