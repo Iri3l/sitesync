@@ -63,16 +63,16 @@ export default async function SitesPage() {
   const isDirector = userRole === "director"
   const isManager = userRole === "manager"
   const canCreateSite = permissions.canCreateSite
-  const canViewAllSites = permissions.canViewAllSites
 
   // Build where clause based on role
   let whereClause: any = {}
   
-  if (isManager) {
-    whereClause.managerId = session.user.id
-  } else if (!canViewAllSites) {
+  // User and Supervisor see only ACTIVE sites
+  // Manager and Director see ALL sites (active + inactive)
+  if (userRole === "user" || userRole === "supervisor") {
     whereClause.status = "active"
   }
+  // Manager and Director see everything (no filter)
 
   const sites = await prisma.site.findMany({
     where: whereClause,
@@ -143,11 +143,9 @@ export default async function SitesPage() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Sites</h1>
           <p className="text-slate-500 mt-1">
-            {isDirector
+            {isDirector || isManager
               ? `Viewing all ${sites.length} construction sites`
-              : isManager
-                ? `Managing ${sites.length} construction sites`
-                : `${sites.length} active construction sites`}
+              : `${sites.length} active construction sites`}
           </p>
         </div>
         {canCreateSite && (
