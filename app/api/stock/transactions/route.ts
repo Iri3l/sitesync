@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { sendStockAlertEmail } from "@/lib/email"
 
 const createTransactionSchema = z.object({
   stockItemId: z.string(),
@@ -10,6 +11,73 @@ const createTransactionSchema = z.object({
   quantity: z.number().min(0.01),
   notes: z.string().optional(),
 })
+
+// Helper function to check stock levels and send notifications
+async function checkAndNotifyStockLevels(
+  stockItemId: string,
+  newQuantity: number,
+  previousQuantity: number
+) {
+  try {
+    // Get the stock item with site info
+    const stockItem = await prisma.stockItem.findUnique({
+      where: { id: stockItemId },
+      include: {
+        site: {
+          select: { name: true, managerId: true },
+        },
+      },
+    })
+
+    if (!stockItem) return
+
+    const minQuantity = stockItem.minQuantity || 0
+    const isOutOfStock = newQuantity === 0
+    const isBelowThreshold = newQuantity > 0 && newQuantity <= minQuantity
+    
+    // Check if we crossed the threshold (was above, now below or out)
+    const wasAboveThreshold = previousQuantity > minQuantity
+    const wasInStock = previousQuantity > 0
+    
+    // Only notify if:
+    // 1. Item just went out of stock (was > 0, now = 0)
+    // 2. Item just went below threshold (was above minQuantity, now at or below)
+    const shouldNotifyOutOfStock = isOutOfStock && wasInStock
+    const shouldNotifyLowStock = isBelowThreshold && wasAboveThreshold && !isOutOfStock
+
+    if (!shouldNotifyOutOfStock && !shouldNotifyLowStock) return
+
+    // Get all managers and directors to notify
+    const recipients = await prisma.user.findMany({
+      where: {
+        role: { in: ["manager", "director"] },
+      },
+      select: { email: true },
+    })
+
+    // Send email notifications
+    for (const recipient of recipients) {
+      try {
+        await sendStockAlertEmail({
+          email: recipient.email,
+          stock: {
+            itemName: stockItem.name,
+            siteName: stockItem.site.name,
+            currentQuantity: newQuantity,
+            minQuantity: minQuantity,
+            unit: stockItem.unit,
+            isOutOfStock: shouldNotifyOutOfStock,
+          },
+        })
+        console.log(`Stock alert sent to ${recipient.email} for ${stockItem.name}`)
+      } catch (emailError) {
+        console.error(`Failed to send stock alert to ${recipient.email}:`, emailError)
+      }
+    }
+  } catch (error) {
+    console.error("Error checking stock levels:", error)
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -56,6 +124,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Calculate new quantity
+    const newQuantity =
+      validated.type === "in"
+        ? stockItem.quantity + validated.quantity
+        : stockItem.quantity - validated.quantity
+
     // Create transaction and update stock quantity in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create transaction record
@@ -69,12 +143,6 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      // Update stock quantity
-      const newQuantity =
-        validated.type === "in"
-          ? stockItem.quantity + validated.quantity
-          : stockItem.quantity - validated.quantity
-
       await tx.stockItem.update({
         where: {
           id: validated.stockItemId,
@@ -86,6 +154,16 @@ export async function POST(req: NextRequest) {
 
       return transaction
     })
+
+    // Check stock levels and send notifications if needed (only for "out" transactions)
+    if (validated.type === "out") {
+      // Run async without blocking the response
+      checkAndNotifyStockLevels(
+        validated.stockItemId,
+        newQuantity,
+        stockItem.quantity
+      ).catch(console.error)
+    }
 
     return NextResponse.json(result, { status: 201 })
   } catch (error) {
