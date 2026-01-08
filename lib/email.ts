@@ -30,7 +30,7 @@ export async function sendPasswordResetEmail({
 
   try {
     const { data, error } = await client.emails.send({
-      from: "SiteSync <onboarding@resend.dev>", // Use your verified domain in production
+      from: "SiteSync <noreply@manager.lazarovici.co.uk>"
       to: email,
       subject: "Reset Your SiteSync Password",
       html: `
@@ -157,7 +157,7 @@ export async function sendStockAlertEmail({
 
   try {
     const { data, error } = await client.emails.send({
-      from: "SiteSync <onboarding@resend.dev>",
+      from: "SiteSync <noreply@manager.lazarovici.co.uk>",
       to: email,
       subject: `${alertEmoji} ${alertType}: ${stock.itemName} at ${stock.siteName}`,
       html: `
@@ -245,7 +245,7 @@ export async function sendDelayNotificationEmail({
 
   try {
     const { data, error } = await client.emails.send({
-      from: "SiteSync <onboarding@resend.dev>",
+      from: "SiteSync <noreply@manager.lazarovici.co.uk>",
       to: email,
       subject: `⚠️ New Delay Reported: ${delay.title}`,
       html: `
