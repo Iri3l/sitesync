@@ -1,7 +1,14 @@
 import { Resend } from "resend"
 
-// Initialize Resend with API key
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Initialize Resend with API key (lazy initialization to avoid build errors)
+let resend: Resend | null = null
+
+function getResendClient() {
+  if (!resend && process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resend
+}
 
 interface SendPasswordResetEmailParams {
   email: string
@@ -15,9 +22,14 @@ export async function sendPasswordResetEmail({
   userName,
 }: SendPasswordResetEmailParams) {
   const name = userName || "Director"
+  const client = getResendClient()
+
+  if (!client) {
+    throw new Error("Email service not configured. RESEND_API_KEY is missing.")
+  }
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await client.emails.send({
       from: "SiteSync <onboarding@resend.dev>", // Use your verified domain in production
       to: email,
       subject: "Reset Your SiteSync Password",
