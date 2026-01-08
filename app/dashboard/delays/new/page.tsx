@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { SiteSelector } from "@/components/site-selector"
+import { NotificationPermission } from "@/components/notification-permission"
+import { showDelayNotification, registerServiceWorker } from "@/lib/notifications"
 import Link from "next/link"
 
 const categories = [
@@ -30,8 +32,27 @@ export default function NewDelayPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [siteId, setSiteId] = useState("")
+  const [siteName, setSiteName] = useState("")
+  const [sites, setSites] = useState<Array<{ id: string; name: string }>>([])
   const [category, setCategory] = useState("")
   const [severity, setSeverity] = useState("moderate")
+
+  // Register service worker and fetch sites on mount
+  useEffect(() => {
+    registerServiceWorker()
+    
+    // Fetch sites to get site names
+    fetch("/api/sites")
+      .then(res => res.json())
+      .then(data => setSites(data))
+      .catch(console.error)
+  }, [])
+
+  // Update site name when siteId changes
+  useEffect(() => {
+    const site = sites.find(s => s.id === siteId)
+    setSiteName(site?.name || "")
+  }, [siteId, sites])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -57,6 +78,17 @@ export default function NewDelayPage() {
       })
 
       if (response.ok) {
+        const delay = await response.json()
+        
+        // Show push notification
+        await showDelayNotification({
+          title: formData.get("title") as string,
+          siteName: siteName,
+          category: category,
+          severity: severity,
+          delayId: delay.id,
+        })
+        
         router.push("/dashboard/delays")
       } else {
         const data = await response.json()
@@ -72,18 +104,21 @@ export default function NewDelayPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard/delays">
-          <Button variant="ghost" size="icon" className="rounded-xl">
-            ←
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-            Report New Delay
-          </h1>
-          <p className="text-slate-500 mt-1">Document project delays for tracking</p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard/delays">
+            <Button variant="ghost" size="icon" className="rounded-xl">
+              ←
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+              Report New Delay
+            </h1>
+            <p className="text-slate-500 mt-1">Document project delays for tracking</p>
+          </div>
         </div>
+        <NotificationPermission />
       </div>
 
       <form onSubmit={handleSubmit}>
