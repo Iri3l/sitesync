@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { format } from "date-fns"
-import { getPermissions } from "@/lib/permissions"
+import { SiteActions } from "./site-actions"
 
 export default async function SiteDetailsPage({
   params,
@@ -20,9 +20,11 @@ export default async function SiteDetailsPage({
   }
 
   const userRole = session.user.role || "user"
-  const permissions = getPermissions(userRole)
-  const isUser = userRole === "user"
+  const isDirector = userRole === "director"
   const isManager = userRole === "manager"
+  const isSupervisor = userRole === "supervisor"
+  const isUser = userRole === "user"
+  const canManageSite = isDirector
 
   // Fetch site details
   const site = await prisma.site.findUnique({
@@ -41,288 +43,231 @@ export default async function SiteDetailsPage({
     redirect("/dashboard/sites")
   }
 
-  // Fetch snags for this site
-  const whereClauseSnags: any = {
-    siteId: params.id,
-  }
+  // Fetch counts for this site
+  const [snagsCount, stockCount, delaysCount, diaryCount] = await Promise.all([
+    prisma.snag.count({ where: { siteId: params.id } }),
+    prisma.stockItem.count({ where: { siteId: params.id } }),
+    prisma.delay.count({ where: { siteId: params.id } }),
+    prisma.siteDiary.count({ where: { siteId: params.id } }),
+  ])
 
-  // Filter out accepted snags for non-managers
-  if (userRole !== "manager") {
-    whereClauseSnags.status = { not: "accepted" }
-  }
-
-  const snags = await prisma.snag.findMany({
-    where: whereClauseSnags,
-    include: {
-      createdBy: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
-      assignedTo: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
-      photos: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+  // Fetch recent activity counts
+  const openSnags = await prisma.snag.count({ 
+    where: { siteId: params.id, status: "open" } 
   })
-
-  // Fetch stock items for this site
-  const stockItems = await prisma.stockItem.findMany({
+  const activeDelays = await prisma.delay.count({ 
+    where: { siteId: params.id, status: "active" } 
+  })
+  const lowStockItems = await prisma.stockItem.count({
     where: {
       siteId: params.id,
+      quantity: { lte: prisma.stockItem.fields.minQuantity },
     },
-    include: {
-      transactions: {
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 3,
-      },
-    },
-    orderBy: {
-      name: "asc",
-    },
-  })
+  }).catch(() => 0) // Handle case where comparison might fail
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open":
-        return "bg-red-100 text-red-800"
-      case "in_progress":
-        return "bg-green-200 text-green-800" // Light green
-      case "resolved":
-        return "bg-green-100 text-green-800"
-      case "accepted":
-        return "bg-green-600 text-white" // Dark green
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "critical":
-        return "bg-red-700" // Dark red for high risk
-      case "high":
-        return "bg-red-400" // Light red
-      case "medium":
-        return "bg-orange-500" // Orange
-      case "low":
-        return "bg-yellow-300" // Light yellow
-      default:
-        return "bg-gray-500"
-    }
-  }
-
-  const getStockStatus = (quantity: number, minQuantity: number | null) => {
-    if (minQuantity === null) return "normal"
-    if (quantity <= 0) return "out"
-    if (quantity <= minQuantity) return "low"
-    return "normal"
-  }
+  const isInactive = site.status !== "active"
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 fade-in">
+      {/* View Only Banner for Users */}
       {isUser && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
-          <span className="text-2xl">👁️</span>
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl">
+            👁️
+          </div>
           <div>
-            <p className="font-medium text-blue-800">View Only Mode</p>
+            <p className="font-semibold text-blue-900">View Only Mode</p>
             <p className="text-sm text-blue-600">You can view site information but cannot make changes.</p>
           </div>
         </div>
       )}
-      
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{site.name}</h1>
-          <p className="text-muted-foreground">
-            {site.address || "No address provided"}
-          </p>
-          {site.manager && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Manager: {site.manager.name || site.manager.email}
-            </p>
+
+      {/* Inactive Site Banner */}
+      {isInactive && (
+        <div className="bg-gradient-to-r from-slate-100 to-slate-200 border border-slate-300 rounded-2xl p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-slate-300 flex items-center justify-center text-2xl">
+            🔒
+          </div>
+          <div>
+            <p className="font-semibold text-slate-900">Inactive Site</p>
+            <p className="text-sm text-slate-600">This site is currently closed/inactive.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Site Header */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl ${
+              isInactive ? "bg-slate-100" : "bg-gradient-to-br from-orange-400 to-amber-500"
+            }`}>
+              {isInactive ? "🔒" : "🏗️"}
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">{site.name}</h1>
+              <p className="text-slate-500 mt-1">
+                {site.address || "No address provided"}
+              </p>
+              {site.manager && (
+                <p className="text-sm text-slate-400 mt-1">
+                  Manager: {site.manager.name || site.manager.email}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  isInactive 
+                    ? "bg-slate-100 text-slate-600" 
+                    : "bg-emerald-100 text-emerald-700"
+                }`}>
+                  {site.status === "active" ? "✓ Active" : "Inactive"}
+                </span>
+                <span className="text-xs text-slate-400">
+                  Created {format(new Date(site.createdAt), "MMM d, yyyy")}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Site Actions for Director */}
+          {canManageSite && (
+            <SiteActions siteId={site.id} siteName={site.name} siteStatus={site.status} />
           )}
         </div>
-        <Link href="/dashboard/sites">
-          <Button variant="outline">Back to Sites</Button>
-        </Link>
       </div>
 
-      {/* Snags Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Snags</CardTitle>
-              <CardDescription>
-                Track and manage site defects for this site
-              </CardDescription>
-            </div>
-            {permissions.canCreateSnag && !isUser && (
-              <Link href={`/dashboard/snags/new?siteId=${site.id}`}>
-                <Button size="sm">New Snag</Button>
-              </Link>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {snags.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">
-              No snags found for this site.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {snags.map((snag) => (
-                <Card key={snag.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{snag.title}</CardTitle>
-                        <CardDescription>
-                          {format(new Date(snag.createdAt), "PPP")}
-                        </CardDescription>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
-                            snag.status
-                          )}`}
-                        >
-                          {snag.status.replace("_", " ").toUpperCase()}
-                        </span>
-                        <span
-                          className={`w-3 h-3 rounded-full ${getPriorityColor(
-                            snag.priority
-                          )}`}
-                          title={snag.priority}
-                        />
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {snag.description && (
-                      <p className="text-sm mb-2">{snag.description}</p>
-                    )}
-                    {snag.location && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Location: {snag.location}
-                      </p>
-                    )}
-                    {snag.assignedTo && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Assigned to: {snag.assignedTo.name || snag.assignedTo.email}
-                      </p>
-                    )}
-                    {snag.photos.length > 0 && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {snag.photos.length} photo(s)
-                      </p>
-                    )}
-                    <div className="mt-4">
-                      <Link href={`/dashboard/snags/${snag.id}`}>
-                        <Button variant="outline" size="sm">
-                          View Details
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="text-3xl font-bold text-slate-900">{snagsCount}</div>
+          <div className="text-sm text-slate-500">Total Snags</div>
+          {openSnags > 0 && (
+            <div className="text-xs text-red-600 mt-1">⚠️ {openSnags} open</div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="text-3xl font-bold text-slate-900">{stockCount}</div>
+          <div className="text-sm text-slate-500">Stock Items</div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="text-3xl font-bold text-slate-900">{delaysCount}</div>
+          <div className="text-sm text-slate-500">Delays</div>
+          {activeDelays > 0 && (
+            <div className="text-xs text-orange-600 mt-1">⏱️ {activeDelays} active</div>
+          )}
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="text-3xl font-bold text-slate-900">{diaryCount}</div>
+          <div className="text-sm text-slate-500">Diary Entries</div>
+        </div>
+      </div>
 
-      {/* Stock Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Stock Items</CardTitle>
-              <CardDescription>
-                Manage inventory for this site
-              </CardDescription>
-            </div>
-            {userRole === "manager" && (
-              <Link href={`/dashboard/stock/new?siteId=${site.id}`}>
-                <Button size="sm">New Stock Item</Button>
-              </Link>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {stockItems.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">
-              No stock items found for this site.
-            </p>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {stockItems.map((item) => {
-                const status = getStockStatus(item.quantity, item.minQuantity)
-                return (
-                  <Card key={item.id}>
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{item.name}</CardTitle>
-                          {item.category && (
-                            <CardDescription>{item.category}</CardDescription>
-                          )}
-                        </div>
-                        {status === "low" && (
-                          <span className="px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                            Low
-                          </span>
-                        )}
-                        {status === "out" && (
-                          <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-                            Out
-                          </span>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Quantity:</span>
-                          <span className="font-medium">
-                            {item.quantity} {item.unit}
-                          </span>
-                        </div>
-                        {item.minQuantity !== null && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Min:</span>
-                            <span>{item.minQuantity} {item.unit}</span>
-                          </div>
-                        )}
-                        <div className="pt-4">
-                          <Link href={`/dashboard/stock/${item.id}`}>
-                            <Button variant="outline" size="sm" className="w-full">
-                              View Details
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Quick Access Cards */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Snags Card */}
+        <Link href={`/dashboard/snags?siteId=${site.id}`}>
+          <Card className="hover:shadow-lg transition-all duration-300 hover:border-orange-200 cursor-pointer group h-full">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  ⚠️
+                </div>
+                <div>
+                  <CardTitle className="group-hover:text-orange-600 transition-colors">Snags</CardTitle>
+                  <CardDescription>Track and manage site defects</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold text-slate-900">{snagsCount}</span>
+                {openSnags > 0 && (
+                  <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
+                    {openSnags} open
+                  </span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Stock Card */}
+        <Link href={`/dashboard/stock?siteId=${site.id}`}>
+          <Card className="hover:shadow-lg transition-all duration-300 hover:border-orange-200 cursor-pointer group h-full">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  📦
+                </div>
+                <div>
+                  <CardTitle className="group-hover:text-orange-600 transition-colors">Stock</CardTitle>
+                  <CardDescription>Manage inventory items</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold text-slate-900">{stockCount}</span>
+                <span className="text-sm text-slate-500">items</span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Delays Card - Only for Manager/Supervisor/Director */}
+        {(isDirector || isManager || isSupervisor) && (
+          <Link href={`/dashboard/delays?siteId=${site.id}`}>
+            <Card className="hover:shadow-lg transition-all duration-300 hover:border-orange-200 cursor-pointer group h-full">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    ⏱️
+                  </div>
+                  <div>
+                    <CardTitle className="group-hover:text-orange-600 transition-colors">Delays</CardTitle>
+                    <CardDescription>Track project delays</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold text-slate-900">{delaysCount}</span>
+                  {activeDelays > 0 && (
+                    <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
+                      {activeDelays} active
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+
+        {/* Site Diary Card - Only for Manager/Supervisor/Director */}
+        {(isDirector || isManager || isSupervisor) && (
+          <Link href={`/dashboard/site-diary?siteId=${site.id}`}>
+            <Card className="hover:shadow-lg transition-all duration-300 hover:border-orange-200 cursor-pointer group h-full">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    📔
+                  </div>
+                  <div>
+                    <CardTitle className="group-hover:text-orange-600 transition-colors">Site Diary</CardTitle>
+                    <CardDescription>Daily logs and notes</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold text-slate-900">{diaryCount}</span>
+                  <span className="text-sm text-slate-500">entries</span>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+      </div>
     </div>
   )
 }
-
-
-

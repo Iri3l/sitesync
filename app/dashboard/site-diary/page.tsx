@@ -7,74 +7,86 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { format } from "date-fns"
 
-export default async function SiteDiaryPage() {
+export default async function SiteDiaryPage({
+  searchParams,
+}: {
+  searchParams: { siteId?: string }
+}) {
   const session = await getServerSession(authOptions)
 
   if (!session) {
     redirect("/signin")
   }
 
-  // Block access for regular users and supervisors
+  // Block access for regular users
   const userRole = session.user.role || "user"
-  if (userRole !== "manager") {
-    redirect("/dashboard")
+  if (userRole === "user") {
+    redirect("/dashboard/sites")
   }
 
-  // Get user's sites
-  const sites = await prisma.site.findMany({
-    where: {
-      managerId: session.user.id,
-    },
-  })
+  const siteId = searchParams?.siteId
 
-  // Get recent diary entries
+  const site = siteId
+    ? await prisma.site.findUnique({
+        where: { id: siteId },
+        select: { name: true, address: true },
+      })
+    : null
+
+  // Build where clause
+  const whereClause: any = {}
+  if (siteId) {
+    whereClause.siteId = siteId
+  }
+
+  // Get diary entries (filtered by site if siteId provided)
   const diaryEntries = await prisma.siteDiary.findMany({
-    where: {
-      userId: session.user.id,
-    },
+    where: whereClause,
     include: {
       site: true,
       photos: true,
+      user: {
+        select: { name: true, email: true },
+      },
     },
     orderBy: {
       date: "desc",
     },
-    take: 10,
+    take: 20,
   })
 
+  const canCreate = userRole === "manager" || userRole === "supervisor" || userRole === "director"
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Site Diary</h1>
-          <p className="text-muted-foreground">
-            Manage daily site diary entries
+          <h1 className="text-3xl font-bold text-slate-900">
+            {site ? `Site Diary - ${site.name}` : "Site Diary"}
+          </h1>
+          <p className="text-slate-500 mt-1">
+            {site ? site.address || "Daily logs and notes" : "Manage daily site diary entries"}
           </p>
         </div>
-        <Link href="/dashboard/site-diary/new">
-          <Button>New Entry</Button>
-        </Link>
+        {canCreate && (
+          <Link href={`/dashboard/site-diary/new${siteId ? `?siteId=${siteId}` : ""}`}>
+            <Button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
+              + New Entry
+            </Button>
+          </Link>
+        )}
       </div>
 
-      {sites.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              No sites found. Please create a site first.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {diaryEntries.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">
-                  No diary entries yet. Create your first entry.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
+      <div className="space-y-4">
+        {diaryEntries.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">
+                No diary entries yet. {canCreate ? "Create your first entry." : ""}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
             diaryEntries.map((entry) => (
               <Card key={entry.id}>
                 <CardHeader>
@@ -116,7 +128,6 @@ export default async function SiteDiaryPage() {
             ))
           )}
         </div>
-      )}
     </div>
   )
 }

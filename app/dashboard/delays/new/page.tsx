@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -30,8 +30,11 @@ const severities = [
 
 export default function NewDelayPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialSiteId = searchParams.get("siteId") || ""
+  
   const [loading, setLoading] = useState(false)
-  const [siteId, setSiteId] = useState("")
+  const [siteId, setSiteId] = useState(initialSiteId)
   const [siteName, setSiteName] = useState("")
   const [sites, setSites] = useState<Array<{ id: string; name: string }>>([])
   const [category, setCategory] = useState("")
@@ -89,7 +92,10 @@ export default function NewDelayPage() {
           delayId: delay.id,
         })
         
-        router.push("/dashboard/delays")
+        const redirectUrl = initialSiteId 
+          ? `/dashboard/delays?siteId=${initialSiteId}` 
+          : "/dashboard/delays"
+        router.push(redirectUrl)
       } else {
         const data = await response.json()
         alert(data.error || "Failed to create delay")
@@ -102,11 +108,15 @@ export default function NewDelayPage() {
     }
   }
 
+  const backUrl = initialSiteId 
+    ? `/dashboard/delays?siteId=${initialSiteId}` 
+    : "/dashboard/delays"
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard/delays">
+          <Link href={backUrl}>
             <Button variant="ghost" size="icon" className="rounded-xl">
               ←
             </Button>

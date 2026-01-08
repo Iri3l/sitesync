@@ -1,25 +1,17 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { SignOutButton } from "@/components/sign-out-button"
 import { Logo } from "@/components/logo"
+import { useEffect, useState } from "react"
 
 interface DashboardNavProps {
   userRole?: string | null
   userEmail?: string | null
 }
 
-const navItems = [
-  { href: "/dashboard/sites", label: "Sites", icon: BuildingIcon, roles: ["all"] },
-  { href: "/dashboard/site-diary", label: "Site Diary", icon: CalendarIcon, roles: ["director", "manager"] },
-  { href: "/dashboard/snags", label: "Snags", icon: WarningIcon, roles: ["all"] },
-  { href: "/dashboard/delays", label: "Delays", icon: ClockIcon, roles: ["director", "manager", "supervisor"] },
-  { href: "/dashboard/stock", label: "Stock", icon: BoxIcon, roles: ["all"] },
-  { href: "/dashboard/users", label: "Users", icon: UsersIcon, roles: ["director"] },
-  { href: "/dashboard/profile", label: "Profile", icon: UserIcon, roles: ["all"] },
-]
-
+// Icons
 function BuildingIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -76,16 +68,68 @@ function UserIcon({ className }: { className?: string }) {
   )
 }
 
+function ArrowLeftIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </svg>
+  )
+}
+
 export function DashboardNav({ userRole, userEmail }: DashboardNavProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [siteName, setSiteName] = useState<string | null>(null)
 
   const isDirector = userRole === "director"
   const isManager = userRole === "manager"
-  const isUser = userRole === "user"
   const isSupervisor = userRole === "supervisor"
-  const isUserOrSupervisor = isUser || isSupervisor
+  const isUser = userRole === "user"
 
   const isActive = (path: string) => pathname.startsWith(path)
+  
+  // Detect site context from URL
+  // Either from /dashboard/sites/[id] path or from ?siteId= query param
+  const siteIdFromPath = pathname.match(/\/dashboard\/sites\/([^\/]+)/)?.[1]
+  const siteIdFromQuery = searchParams.get("siteId")
+  const currentSiteId = siteIdFromPath || siteIdFromQuery
+  
+  // Check if we're in a site context
+  const isInSiteContext = !!currentSiteId && currentSiteId !== "new"
+
+  // Fetch site name when site context changes
+  useEffect(() => {
+    if (isInSiteContext && currentSiteId) {
+      fetch(`/api/sites?id=${currentSiteId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            const site = data.find((s: any) => s.id === currentSiteId)
+            setSiteName(site?.name || null)
+          } else if (data.name) {
+            setSiteName(data.name)
+          }
+        })
+        .catch(() => setSiteName(null))
+    } else {
+      setSiteName(null)
+    }
+  }, [currentSiteId, isInSiteContext])
+
+  // Navigation items when NO site is selected (global view)
+  const globalNavItems = [
+    { href: "/dashboard/sites", label: "Sites", icon: BuildingIcon, roles: ["all"] },
+    { href: "/dashboard/users", label: "Users", icon: UsersIcon, roles: ["director"] },
+    { href: "/dashboard/profile", label: "Profile", icon: UserIcon, roles: ["all"] },
+  ]
+
+  // Navigation items when a site IS selected (site-specific view)
+  const siteNavItems = [
+    { href: `/dashboard/site-diary?siteId=${currentSiteId}`, label: "Site Diary", icon: CalendarIcon, roles: ["director", "manager", "supervisor"] },
+    { href: `/dashboard/snags?siteId=${currentSiteId}`, label: "Snags", icon: WarningIcon, roles: ["all"] },
+    { href: `/dashboard/delays?siteId=${currentSiteId}`, label: "Delays", icon: ClockIcon, roles: ["director", "manager", "supervisor"] },
+    { href: `/dashboard/stock?siteId=${currentSiteId}`, label: "Stock", icon: BoxIcon, roles: ["all"] },
+  ]
 
   const canViewItem = (roles: string[]) => {
     if (roles.includes("all")) return true
@@ -102,21 +146,47 @@ export function DashboardNav({ userRole, userEmail }: DashboardNavProps) {
     return "bg-gradient-to-r from-slate-500 to-slate-600 text-white shadow-lg shadow-slate-500/25"
   }
 
+  // Determine which nav items to show
+  const navItems = isInSiteContext ? siteNavItems : globalNavItems
+
   return (
     <nav className="border-b border-slate-200/80 bg-white/80 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center space-x-8">
+        <div className="flex items-center space-x-4">
+          {/* Back to Sites button when in site context */}
+          {isInSiteContext && (
+            <Link 
+              href="/dashboard/sites"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all"
+            >
+              <ArrowLeftIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Sites</span>
+            </Link>
+          )}
+
+          {/* Logo */}
           <Link 
-            href={isUserOrSupervisor ? "/dashboard/sites" : "/dashboard"} 
+            href="/dashboard/sites" 
             className="hover:opacity-90 transition-all duration-300 hover:scale-105"
           >
             <Logo size="md" />
           </Link>
+
+          {/* Current Site Name Badge */}
+          {isInSiteContext && siteName && (
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-xl">
+              <BuildingIcon className="w-4 h-4 text-orange-500" />
+              <span className="text-sm font-medium text-orange-700 max-w-[200px] truncate">
+                {siteName}
+              </span>
+            </div>
+          )}
           
-          <div className="hidden md:flex items-center space-x-1">
+          {/* Navigation Items */}
+          <div className="hidden md:flex items-center space-x-1 ml-4">
             {navItems.map((item) => {
               if (!canViewItem(item.roles)) return null
-              const active = isActive(item.href)
+              const active = isActive(item.href.split('?')[0]) // Check base path without query
               const Icon = item.icon
               
               return (
@@ -161,10 +231,20 @@ export function DashboardNav({ userRole, userEmail }: DashboardNavProps) {
 
       {/* Mobile Navigation */}
       <div className="md:hidden border-t border-slate-100 bg-white px-4 py-2 overflow-x-auto">
+        {/* Site name on mobile */}
+        {isInSiteContext && siteName && (
+          <div className="flex items-center gap-2 px-2 py-1 mb-2 bg-orange-50 rounded-lg">
+            <BuildingIcon className="w-3.5 h-3.5 text-orange-500" />
+            <span className="text-xs font-medium text-orange-700 truncate">
+              {siteName}
+            </span>
+          </div>
+        )}
+        
         <div className="flex items-center space-x-2">
           {navItems.map((item) => {
             if (!canViewItem(item.roles)) return null
-            const active = isActive(item.href)
+            const active = isActive(item.href.split('?')[0])
             const Icon = item.icon
             
             return (

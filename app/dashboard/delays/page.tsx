@@ -22,7 +22,11 @@ const severityConfig: Record<string, { label: string; color: string; bg: string 
   major: { label: "Major", color: "text-red-700", bg: "bg-red-100" },
 }
 
-export default async function DelaysPage() {
+export default async function DelaysPage({
+  searchParams,
+}: {
+  searchParams: { siteId?: string }
+}) {
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -32,8 +36,22 @@ export default async function DelaysPage() {
   const userRole = session.user.role || "user"
   const canCreate = userRole === "manager" || userRole === "supervisor" || userRole === "director"
   const isUser = userRole === "user"
+  const siteId = searchParams?.siteId
+
+  const whereClause: any = {}
+  if (siteId) {
+    whereClause.siteId = siteId
+  }
+
+  const site = siteId
+    ? await prisma.site.findUnique({
+        where: { id: siteId },
+        select: { name: true, address: true },
+      })
+    : null
 
   const delays = await prisma.delay.findMany({
+    where: whereClause,
     include: {
       site: { select: { name: true } },
       createdBy: { select: { name: true, email: true } },
@@ -63,19 +81,23 @@ export default async function DelaysPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Delays</h1>
-          <p className="text-slate-500 mt-1">Track and manage project delays</p>
+          <h1 className="text-3xl font-bold text-slate-900">
+            {site ? `Delays - ${site.name}` : "Delays"}
+          </h1>
+          <p className="text-slate-500 mt-1">
+            {site ? site.address || "Project delays" : "Track and manage project delays"}
+          </p>
         </div>
         
         {canCreate && (
           <div className="flex items-center gap-3">
             <a
-              href="/api/export/delays?format=csv"
+              href={`/api/export/delays?format=csv${siteId ? `&siteId=${siteId}` : ""}`}
               className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
             >
               📥 Export CSV
             </a>
-            <Link href="/dashboard/delays/new">
+            <Link href={`/dashboard/delays/new${siteId ? `?siteId=${siteId}` : ""}`}>
               <Button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-orange-500/25">
                 <span className="mr-2">+</span>
                 New Delay
